@@ -1,0 +1,71 @@
+#!/usr/bin/perl -w
+# $Id: StreamMgr,v 1.1 2004/02/22 14:27:38 tobias Exp $
+
+use strict;
+use Net::Streamload;
+
+use Tk;
+use Tk::FileSelect;
+use Tk::ProgressBar;
+
+my $percent_done = 60;
+my $status_info = 'Ready';
+
+# Events
+sub quit {
+	exit;
+}
+
+# Create window
+my $window = MainWindow->new(-width=>400, -height=>300);
+$window->minsize(20, 5);
+
+# Menu
+my $menubar = $window->Menu(-type=>'menubar');
+my $filemenu = $menubar->cascade(-label=>"File", -underline=>0, -tearoff=>0,
+	-menuitems => [
+		[Button => "Add File...", -underline=> 4, -command=>\&new],
+		[Button => "Add URL...",  -underline=> 4, -command=>\&bla],
+		[Separator => ""],
+		[Button => "Exit", -underline=> 0, -command=>\&quit]
+		]);
+$window->configure(-menu => $menubar);
+
+# Filelist
+my $listframe = $window->Frame();
+my $scroll = $listframe->Scrollbar();
+$scroll->pack(-side => 'right', -fill => 'y');
+my $list = $listframe->Listbox(
+	-yscrollcommand => ['set', $scroll],
+	-relief => 'sunken',
+	-width => 20,
+	-height => 5,
+	-setgrid => 'yes');
+$list->pack(-side => 'left', -fill => 'both', -expand => 'yes');
+$scroll->configure(-command => ['yview', $list]);
+$listframe->pack(-side => 'top', -fill => 'both', -expand => 'yes');
+
+# Status elements
+my $statusbar = $window->Label(
+	-textvariable => \$status_info,
+	-height => 1);
+$statusbar->pack(-side => 'bottom', -fill => 'x');
+
+my $progress = $window->ProgressBar(
+	-width => 20,
+	-length => 20,
+	-anchor => 'w',
+	-from => 0,
+	-to => 100,
+	-blocks => 1,
+	-colors => [0, 'green'],
+	-variable => \$percent_done);
+$progress->pack(-side => 'bottom', -fill => 'x');
+
+# Fill List box
+$list->insert("end", "WARNING: This is", "a non-funtional", "preview! Mail",
+	"streamload-support\@portfolio16.de", "if you want more!");
+
+MainLoop();
+
+# vi: set tabstop=4 shiftwidth=4:

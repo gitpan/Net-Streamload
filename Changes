@@ -1,9 +1,23 @@
 Revision history for Perl extension Net::Streamload.
 
+0.03  Fri Feb 27 20:14 CET 2004
+	- also calls the callback function with $progress = 0
+	- nicer output for slup (wget-like)
+	  [yes, I know, wget has changed its style...]
+	- added section for Windows users to the README
+	- new option for slup: -i (read file list)
+	- added preview of StreamMgr
+	- slup is now able to upload whole directory structures
+	- changed module to not silently fail anymore when the connection
+	  is lost
+	- make the module run on big-endian computers (e.G. PowerPC)
+	- added colorful protocol description in XHTML
+
 0.02  Tue Sep 04 21:15 2001
-        - first offical release
+	- first offical release
 
 0.01  Fri Aug 24 20:06 2001
-        - original version; created by h2xs 1.20 with options
-                -XA -n Net::Streamload
+	- original version; created by h2xs 1.20 with options
+		 -XA -n Net::Streamload
 
+$Id: Changes,v 1.12 2004/02/27 19:15:20 tobias Exp $

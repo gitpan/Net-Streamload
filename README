@@ -1,22 +1,24 @@
-Net::Stremload - a Perl module to access the Stremload.com server
+Net::Streamload - a Perl module to access the Streamload.com server
 
-You can install this package with the standard procedure for installing
-Perl modules:
+Included is a simple command line tool named 'slup' to demonstrate the
+functions of the module. Oh yes, if you only want to upload files to
+Streamload, you can use this program ;-) It is a full working upload program
+and uses every detail of the module. Just call is with 'slup' and it will show
+you its usage. Have a lot of fun with Streamload!
 
-    perl Makefile.PL
-    make
-    make test (Does nothing at the moment...)
-    make install
+You can get the most recent version of this module from your nearest CPAN
+mirror. To automagically get to the nearest CPAN mirror, use the URL
+http://www.perl.com/CPAN.
 
-You should do this as 'root'. This also installs the command line tool 'slup'
-to demonstrate the functions of the module. Oh yes, if you only want to upload
-files to Streamload, you can use this program ;-) It is a full working upload
-program and uses every detail of the module. Just call is with 'slup' and it
-will show you its usage. Have  a lot of fun with Streamload!
+For bleeding-edge-development see my CVS start page at http://fli4l.mooo.com/.
+
+If you like this module, why not use it to upload a nice file to my Streamload
+account? You can upload to the account 'TobiX'.
 
 Copyright:
 
-Copyright (c) 2001 Tobias Gruetzmacher. All rights reserved.
+Copyright (c) 2001-2004 Tobias Gruetzmacher. All rights reserved.
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
 
+$Id: README,v 1.7 2004/02/27 19:15:20 tobias Exp $

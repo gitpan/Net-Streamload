@@ -1,0 +1,255 @@
+#!/usr/bin/perl -w
+# $Id: slup,v 1.2 2004/02/27 18:03:31 tobias Exp $
+
+use strict;
+use sigtrap qw(stack-trace error-signals);
+use Net::Streamload;
+use Getopt::Std;
+use Time::HiRes qw(gettimeofday tv_interval);
+
+# Sync versions
+$main::VERSION = $Net::Streamload::VERSION;
+
+sub main::HELP_MESSAGE
+{
+
+print <<END
+
+slup - StreamLoad UPloader
+
+Usage: slup [-s server[:port]] [-u username] [-r]
+            [-f folder] [-b buffer] [-i filelist] files...
+
+ -s    Specify a server name and port, standard is
+       upload.streamload.com:9914. You may also use
+         - upload.streamload.com:80
+         - upload2.streamload.com:9914
+         - upload3.streamload.com:9914
+         - upload4.streamload.com:9914
+       If you don't specify a port, 9914 will be used!
+
+ -u    Specify your Streamload username. If you don't use
+       this option, you will be prompted for it.
+
+ -r    Recursive uploading, upload whole directory structures.
+
+ -f    Folder on Streamload, where the files are stored.
+       This defaults to your Inbox. Use a slash ("/") as
+       path seperator. This are valid paths:
+         Inbox/Uploads
+         "My Stuff/New Files" (You must use quotes when
+                               using spaces)
+         "New Folder" (Will be created in the Inbox)
+         "Playlists/Another Folder"
+
+ -b    You can specify the buffer size. This is used when
+       uploading files. The standard value is 10240 bytes
+       (10kB), which should be OK in most cases... If you
+       have a slow line, try setting this lower to see
+       what is going on...
+       Setting this too low (under 1024) is probably not
+       such a good idea!
+
+ -i    Upload files listed in the specified filelist
+
+Author: Tobias Gruetzmacher <streamload-support\@portfolio16.de>
+
+END
+}
+
+{
+	my $count = 0;
+	my @lasttime = 0;
+	my $lastprogress = 0;
+
+	sub simple_status
+	{
+		my ($file, $action, $stage, $progress, $progressmax) = @_;
+
+		if ($progress == 0) {
+			# Print header!
+			print "\n\n${action}: $file\n";
+			print ((!$stage)?"Uploading...\n":"Processing...\n");
+			@lasttime = gettimeofday();
+		}
+
+		if ($count == 0 and $progress > 0) {
+			if ($stage) {
+				printf " [%3d%%] \n", $progress / $progressmax * 100;
+			} else {
+				my $unit = "";
+				my $percent = $progress / $progressmax * 100;
+				
+				my @now = gettimeofday();
+				my $timediff = tv_interval(\@lasttime, \@now);
+				# This sure is an ugly hack
+				$timediff = 0.1 if ($timediff == 0);
+
+				my $rate = ($progress - $lastprogress) / $timediff;
+
+				my $eta = ($progressmax - $progress) / $rate;
+				my $sec = $eta % 60;
+				my $min = $eta / 60;
+
+				if ($rate > 1024) {
+					$rate /= 1024;
+					$unit = "Ki";
+				}
+				printf " [%3d%%] %.2f%sB/s  ETA: %i:%02i\n", $percent,
+					$rate, $unit, $min, $sec;
+				$lastprogress = $progress;
+				@lasttime = @now;
+			}
+		}
+		
+		if ($count == 0) {
+			if ($progressmax > 9999) {
+				printf "%7dK ", $progress / 1024;
+			} else {
+				printf "%4d ", $progress;
+			}
+		}
+
+		$count++;
+		$count = 0 if (($progress == $progressmax) or ($count == 40));
+
+		print ".";
+		print " " if ($count % 10 == 0);
+	}
+}
+
+
+sub mirror
+{
+	my ($sl, $folref, $file) = @_;
+	my @folders = @$folref;
+
+	my $name = (split("/", $file))[-1];
+	eval { $sl->ensure_folder(join("/", @folders), $name, 0) };
+	if ($@) {
+		print "Error creating folder '$name' in " .
+			join("/", @folders) . ": $@\n";
+		exit 4;
+	}
+	push @folders, $name;
+	
+	foreach (<$file/*>) {
+		if (-f) {
+			eval { $sl->upload(join("/", @folders), $_, 0, \&simple_status) };
+			print "\nError uploading file '$_': $@\n" if ($@);
+		} elsif (-d) {
+			mirror($sl, \@folders, $_);
+		} else {
+			print "Not a regular file: '$_' Skipping it.\n";
+		}
+	}
+}
+
+# Do autoflush:
+$| = 1;
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my (%opts,%options,@files);
+getopts('s:u:f:hb:i:r', \%opts);
+
+# Collect file names from command line and filelist
+push @files, @ARGV;
+if ($opts{i}) {
+	open(FILELIST, "< $opts{i}") or die "Could not open '$opts{i}': $!";
+	while (<FILELIST>) {
+		chomp; # Remove newlines
+		next unless length; # Skip empty lines
+		push @files, $_;
+	}
+	close(FILELIST) or die "Could not close '$opts{i}': $!";
+}
+
+if ($opts{h} or @files == 0) {
+	main::HELP_MESSAGE();
+	exit 2;
+}
+
+foreach (@files) {
+	if (-d $_) {
+		if ($opts{r}) {
+			s{/$}{}; # strip slash
+		} else {
+			print "If you want to upload directories, specify -r\n";
+			exit 2;
+		}
+	}
+}
+
+if ($opts{s}) {
+	($options{Server}, $options{Port}) = split(":", $opts{s});
+	delete $options{Port} unless $options{Port};
+}
+
+if ($opts{u}) {
+	$options{Username} = $opts{u};
+} else {
+	print "What's your Streamload user name? ";
+	$options{Username} = <STDIN>;
+	chop $options{Username};
+	if ($options{Username} eq '') {
+		print "You must specify your Username!\n";
+		exit 1;
+	}
+}
+
+$options{Buffersize}=$opts{b} if (defined($opts{b}) and $opts{b} > 1);
+
+my @folders;
+if ($opts{f}) {
+	push @folders, split("/", $opts{f});
+	unshift @folders, "Inbox" if $folders[0] !~ m/^(My Stuff|Inbox|Playlists)$/;
+} else {
+	push @folders, "Inbox";
+}
+
+print "slup - StreamLoad UPloader - now working!\n";
+
+my $sl=Net::Streamload->new(%options);
+
+# Catch errors!
+eval { $sl->login() };
+if ($@) {
+	# Die grecefully... (The user shouldn't see the Perl errors)
+	print "Error logging in: $@\n";
+	exit 3;
+}
+
+# Create folders recursive
+for (my $i = 1; $i < @folders; $i++) {
+	eval { $sl->ensure_folder(join("/", @folders[0..$i - 1]), $folders[$i], 1) };
+	if ($@) {
+		print "Error creating folder '$folders[$i]' in " .
+			join("/", @folders[0..$i - 1]) . ": $@\n";
+		exit 4;
+	}
+}
+
+foreach my $file (@files) {
+	if ($file !~ m[^(http|ftp)://]) {
+		if (-f $file) {
+			eval { $sl->upload(join("/", @folders), $file, 0, \&simple_status) };
+			print "\nError uploading file '$file': $@\n" if ($@);
+		} elsif (-d $file) {
+			mirror($sl, \@folders, $file);
+		} else {
+			print "File '$file' does not exist or is no regular file! Skipping it!\n";
+		}
+	} else {
+		eval { $sl->url_streamload(join("/", @folders), $file, 0, \&simple_status) };
+		print "\nError uploading URL '$file': $@\n" if ($@);
+	}
+	print "File done!\n" if (!$@);
+}
+
+$sl->logout();
+
+print "\nThanks for using Streamload!\n";
+
+0;
+
+# vi: set tabstop=4 shiftwidth=4:

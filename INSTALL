@@ -1,0 +1,25 @@
+You can install this package with the standard procedure for installing
+Perl modules (built with ExtUtils::MakeMaker):
+
+    perl Makefile.PL
+    make
+    make test (Does nothing at the moment...)
+    make install
+
+You should do the last step as 'root'.
+
+Windows:
+
+I recommend the use of ActiveState Perl, it's really easy with this:
+  1) Download ActiveState Perl from
+        http://www.activestate.com/Products/Download/Get.plex?id=ActivePerl
+     You don't need to register, just press "Next"
+  2) Get nmake from Microsoft:
+        ftp://ftp.microsoft.com/Softlib/MSLFILES/nmake15.exe
+  3) Install the module with the following commands:
+        perl Makefile.PL
+        nmake
+        nmake test (Yes, you can skip this...)
+        nmake install
+  4) Everything is fine!
+

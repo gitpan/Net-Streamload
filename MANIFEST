@@ -1,7 +1,11 @@
+bin/slup
+bin/StreamMgr
 Changes
-MANIFEST
+INSTALL
+lib/Net/Streamload.pm
 Makefile.PL
+MANIFEST
 README
-slup
-Streamload.pm
+StreamloadAPI.htm
 test.pl
+META.yml                                 Module meta-data (added by MakeMaker)

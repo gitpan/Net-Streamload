@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="iso-8859-15"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>Streamload API</title>
+<style type="text/css">
+<!--
+body { color: #000000; background: #FFFFFF; }
+h1 { text-align: center; }
+
+th, td {
+	border-width: 1px;
+	border-style: solid;
+	padding: 2px 3px;
+}
+
+.bool { background: #FFFF00; }
+.int { background: #FF0000; }
+.long { background: #FF00FF; }
+.string { background: #00FFFF; }
+.data { background: #FF7F00; }
+
+.error {
+	background: #00FFFF;
+	border-width: 1px 1px 5px 1px;
+}
+
+.success {
+	border-style: dotted;
+}
+
+.overview {
+	border-width: 1px;
+	border-style: solid;
+}
+
+.comm {
+	width: 100%;
+	padding: 0 5%;
+}
+
+.choice {
+	border-style: dashed;
+	text-align: center;
+	font-weight: bold;
+}
+
+.empty {
+	border-style: none;
+}
+
+.loopstart {
+	border-width: 3px 0px 0px 3px;
+}
+
+.loopend {
+	border-width: 0px 0px 3px 3px;
+}
+
+-->
+</style>
+</head>
+<body>
+<h1>Streamload API</h1>
+
+<p>This is a short desciption of the Streamload server protocol. I created
+this page while programming the <a
+href="http://www.streamload.com/Dev/Dev.asp#perl">Net::Streamload</a>
+module for Perl. This is <strong>not</strong> the official protocol
+description, refer to the <a
+href="http://www.streamload.com/Dev/Dev.asp#code">Streamload Developer
+Page</a> for that.</p>
+
+<p>This protocol works with the Streamload upload servers at
+upload.streamload.com, ports 9914 and 80 (for firewalls).</p>
+
+<p>I'm using the following abbreviations and colors to mark the different data
+types used by Streamload:
+</p>
+
+<table class="overview">
+<tr>
+ <th>symbol</th>
+ <th>type</th>
+ <th>length</th>
+ <th>special</th>
+</tr>
+<tr class="bool">
+ <td>b</td>
+ <td>boolean</td>
+ <td>8-bit</td>
+ <td>non-zero implies truth</td>
+</tr>
+<tr class="int">
+ <td>i</td>
+ <td>integer</td>
+ <td>32-bit</td>
+ <td>signed</td>
+</tr>
+<tr class="long">
+ <td>l</td>
+ <td>quad integer</td>
+ <td>64-bit</td>
+ <td>signed</td>
+</tr>
+<tr class="string">
+ <td>s</td>
+ <td>string</td>
+ <td>32-bit + length of string</td>
+ <td>see notes</td>
+</tr>
+<tr class="data">
+ <td>d</td>
+ <td>data</td>
+ <td>different</td>
+ <td>plain binary dump</td>
+</tr>
+</table>
+<p>Some notes:</p>
+<ul>
+<li>A string consists of its <span class="int">length (i)</span> and the string
+itself, which is transfered as single byte characters</li>
+<li>All numbers are transfered Intel byte-ordered / little-endian.</li>
+<li>The Version of this API is <strong>1.2</strong>, so version major is
+	<strong>1</strong> and version minor is <strong>2</strong>.</li>
+</ul>
+
+<p>The structure of the following tables is this:</p>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="50%" />
+</colgroup>
+<tr><th>Client</th><th>Server</th></tr>
+</table>
+
+<h3>Login (command id 0):</h3>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="25%" />
+	<col width="25%" />
+</colgroup>
+<tr><td class="int">command id (i)</td></tr>
+<tr><td class="int">version major (i)</td></tr>
+<tr><td class="int">version minor (i)</td></tr>
+<tr><td class="string">username (s)</td></tr>
+<tr><td class="string">password (s) (can be blank FORNOW)</td></tr>
+<tr><td class="empty"></td>
+	<td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td>
+	<td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td>
+	<td class="long">Node ID "My Stuff" (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td>
+	<td class="long" colspan="2">Node ID "My Stuff" (l)</td></tr>
+<tr><td class="empty"></td>
+	<td class="long" colspan="2">Node ID "Playlists" (l)</td></tr>
+<tr><td class="empty"></td>
+	<td class="long" colspan="2">Node ID "Inbox" (l)</td></tr>
+<tr><td class="empty"></td>
+	<td class="success" colspan="2">Success</td></tr>
+</table>
+
+<h3>EnsureFolder (command id 1):</h3>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="25%" />
+	<col width="25%" />
+</colgroup>
+<tr><td class="int">command id (i)</td></tr>
+<tr><td class="string">folder name (s)</td></tr>
+<tr><td class="long">parent folder Node ID (l)</td></tr>
+<tr><td class="bool">whether to use the same-named folder (b)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="long">new folder Node ID (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td>
+	<td class="success" colspan="2">Success</td></tr>
+</table>
+
+<h3><a name="UploadInit"></a>UploadInit (command id 2):</h3>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="25%" />
+	<col width="25%" />
+</colgroup>
+<tr><td class="int">command id (i)</td></tr>
+<tr><td class="long">parent folder Node ID (l)</td></tr>
+<tr><td class="string"><a href="#MediaID">media ID (s)</a></td></tr>
+<tr><td class="string">local path (s)</td></tr>
+<tr><td class="long">length of file (l)</td></tr>
+<tr><td class="bool">whether to replace/update the same-named file (b)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td>
+	<td class="choice">true: <a href="#UpStreamload">UpStreamload</a></td>
+	<td class="choice">false: <a href="#Upload">Upload</a></td></tr>
+</table>
+
+<h3><a name="UpStreamload"></a>UpStreamload:</h3>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="25%" />
+	<col width="25%" />
+</colgroup>
+<tr><td class="empty"></td><td class="int" colspan="2">key size (i)</td></tr>
+<tr><td class="empty"></td><td class="int" colspan="2">key count (i)</td></tr>
+<tr><td class="empty"></td><td class="loopstart" colspan="2">Repeat</td></tr>
+<tr><td class="empty"></td><td class="long" colspan="2">key index n (l)</td></tr>
+<tr><td class="empty"></td><td class="loopend" colspan="2">until (n++ == key count)</td></tr>
+<tr><td class="data">buffer of key values (d)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="loopstart">repeat</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td><td class="int" colspan="2">processing progress percentage (i)</td></tr>
+<tr><td class="empty"></td><td class="loopend" colspan="2">until (processing progess == 0)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="long">new node ID (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td><td class="success" colspan="2">Success</td></tr>
+</table>
+
+<h3><a name="Upload"></a>Upload:</h3>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="25%" />
+	<col width="25%" />
+</colgroup>
+<tr><td class="data">bytes of file (d)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="loopstart">repeat</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td><td class="int" colspan="2">processing progress percentage (i)</td>
+<tr><td class="empty"></td><td class="loopend" colspan="2">until (processing progess == 0)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="long">bogus value (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td>
+	<td class="success" colspan="2">Success</td></tr>
+</table>
+
+<p>bogus value: This has been the new node ID, but lost its meaning after the
+update to Streamload v2.</p>
+
+<h3><a name="URLStreamload"></a>URLStreamload (command id 3):</h3>
+
+<p>WARNING: This feature is currently disabled in the Steamload servers and
+will probably not be reenabled any time soon.</p>
+
+<table class="comm">
+<colgroup>
+	<col width="50%" />
+	<col width="25%" />
+	<col width="25%" />
+</colgroup>
+<tr><td class="int">command id (i)</td></tr>
+<tr><td class="long">parent folder Node ID (l)</td></tr>
+<tr><td class="string">URL to load from (s)</td></tr>
+<tr><td class="bool">whether to replace/update the same-named file (b)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="long">file size (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td><td class="loopstart" colspan="2">repeat</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="long">download progress (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td><td class="loopend" colspan="2">until (download progess == 0)</td></tr>
+<tr><td class="empty"></td><td class="loopstart" colspan="2">repeat</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="int">processing progress percentage (i)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td><td class="loopend" colspan="2">until (processing progess == 0)</td></tr>
+<tr><td class="empty"></td><td class="bool" colspan="2">success (b)</td></tr>
+<tr><td class="empty"></td><td class="choice">true</td><td class="choice">false</td></tr>
+<tr><td class="empty"></td><td class="long">new node ID (l)</td>
+	<td class="error">Error Message (s) - END</td></tr>
+<tr><td class="empty"></td>
+	<td class="success" colspan="2">Success</td></tr>
+</table>
+
+</body>
+</html>
