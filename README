@@ -1,0 +1,22 @@
+Net::Stremload - a Perl module to access the Stremload.com server
+
+You can install this package with the standard procedure for installing
+Perl modules:
+
+    perl Makefile.PL
+    make
+    make test (Does nothing at the moment...)
+    make install
+
+You should do this as 'root'. This also installs the command line tool 'slup'
+to demonstrate the functions of the module. Oh yes, if you only want to upload
+files to Streamload, you can use this program ;-) It is a full working upload
+program and uses every detail of the module. Just call is with 'slup' and it
+will show you its usage. Have  a lot of fun with Streamload!
+
+Copyright:
+
+Copyright (c) 2001 Tobias Gruetzmacher. All rights reserved.
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+

@@ -1,0 +1,135 @@
+#!/usr/bin/perl -w
+
+use strict;
+use Net::Streamload;
+use Getopt::Std;
+
+sub usage {
+print <<END
+
+slup - StreamLoad UPloader
+
+Usage: slup [-s server[:port]] [-u username]
+            [-f folder] [-b buffer] files...
+
+ -s    Specify a server name and port, standard is
+       upload.streamload.com:9914. You may also use
+         - upload.streamload.com:80
+         - cameron.streamload.com:9914
+         - christina.streamload.com:9914
+       If you don't specify a port, 9914 will be used!
+
+ -u    Specify your Streamload username. If you don't use
+       this option, you will be prompted for it.
+
+ -f    Folder on Streamload, where the files are stored.
+       This defaults to your Inbox. Use a slash ("/") as
+       path seperator. This are valid paths:
+         Inbox/Uploads
+         "My Stuff/New Files" (You must use quotes when
+                               using spaces)
+         "New Folder" (Will be created in the Inbox)
+         "Playlists/Another Folder"
+
+ -b    You can specify the buffer size. This is used when
+       uploading files. The standard value is 10240 bytes
+       (10kB), which should be OK in most cases... If you
+       have a slow line, try setting this lower to see
+       what is going on...
+       Setting this to low (under 1024) is probably not
+       such a good idea!
+       
+Author: Tobias Gruetzmacher <tobias\@portfolio16.de>
+
+END
+}
+
+{
+  my $count = 0;
+  sub simple_status {
+    my ($file, $action, $stage, $progress, $progressmax) = @_;
+
+    print "$action: $file\n" if ($count++ == 0);
+    $count = 0 if (($progress == $progressmax) or ($count == 15));
+
+    if (!$stage) {
+      printf "[%3d%%] Status: %d Bytes of %d Bytes\n", $progress / $progressmax * 100, $progress, $progressmax;
+    } else {
+      printf "Processing: %d%% done...\n",$progress;
+    }
+  }
+}
+
+my (%opts,%options);
+getopts('s:u:f:hb:', \%opts);
+
+if ($opts{h} or @ARGV == 0) {
+  usage();
+  exit 2;
+}
+
+if ($opts{s}) {
+  ($options{Server}, $options{Port}) = split ":", $opts{s};
+  delete $options{Port} unless $options{Port} > 0;
+}
+
+if ($opts{u}) {
+  $options{Username} = $opts{u};
+} else {
+  print "What's your Streamload user name? ";
+  $options{Username} = <STDIN>;
+  chop $options{Username};
+  if ($options{Username} eq '') {
+    print "You must specify your Username!\n";
+    exit 1;
+  }
+}
+
+$options{Buffersize}=$opts{b} if $opts{b} > 1;
+
+my @folders;
+if ($opts{f}) {
+  push @folders, split("/", $opts{f});
+  unshift @folders, "Inbox" if $folders[0] !~ m/^(My Stuff|Inbox|Playlists)$/;
+} else {
+  push @folders, "Inbox";
+}
+
+my $sl=Net::Streamload->new(%options);
+
+# Catch errors!
+eval { $sl->login() };
+if ($@) {
+  # Die grecefully... (The user shouldn't see the Perl errors)
+  print "Error logging in: $@\n";
+  exit 3;
+}
+
+# Create folders recursive
+for (my $i = 1; $i < @folders; $i++) {
+  eval { $sl->ensure_folder(join("/", @folders[0..$i - 1]), $folders[$i], 1) };
+  if ($@) {
+    print "Error creating folder $folders[$i] in " .
+      join("/", @folders[0..$i - 1]) . ": $@\n";
+    exit 4;
+  }
+}
+
+foreach my $file (@ARGV) {
+  if ($file !~ m[^(http|ftp)://]) {
+    if (-e $file) {
+      eval { $sl->upload(join("/", @folders), $file, 0, \&simple_status) };
+      print "Error uploading file $file: $@\n" if ($@);
+    } else {
+      print "File $file does not exist! Skipping it!\n";
+    }
+  } else {
+    eval { $sl->url_streamload(join("/", @folders), $file, 0, \&simple_status) };
+    print "Error uploading URL $file: $@\n" if ($@);
+  }
+  print "File done!\n" if (!$@);
+}
+
+$sl->logout();
+
+print "\nThanks for using Streamload!\n";
